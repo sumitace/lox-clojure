@@ -18,7 +18,7 @@
            (assoc {:lexeme (str character-to-match)} :type)))
 
 (defn parse-slash
-  ""
+  "Parse comments or slash"
   [source]
   (let [first-char (get source 0)
         source-len (count source)
@@ -41,7 +41,7 @@
     nil))
 
 (defn parse-newline
-  ""
+  "Parse newlines"
   [source]
   (if (= \newline (get source 0)) {:lexeme "\n", :type :newline}))
 
@@ -56,11 +56,14 @@
 
 (defn parse-tokens
   "Recursively parse the remaining source into tokens"
-  [parsed-tokens source]
+  [parsed-tokens source source-line-num]
   (if (clojure.string/blank? source) parsed-tokens
       (let [this-token (parse-token source)
+            this-token (assoc this-token :source-line-num source-line-num)
+            had-newline? (= :newline (:type this-token))
+            next-source-line-num (if had-newline? (inc source-line-num) source-line-num)
             parsed-tokens (conj parsed-tokens this-token)
             this-token-len (count (:lexeme this-token))
             remaining-source (if (> (count source) this-token-len) (subs source this-token-len))]
-        (recur parsed-tokens remaining-source))))
+        (recur parsed-tokens remaining-source next-source-line-num))))
 
