@@ -45,6 +45,16 @@
   [source]
   (if (= \newline (get source 0)) {:lexeme "\n", :type :newline}))
 
+(defn parse-string
+  "Parse strings"
+  [source]
+  (if (= \" (get source 0))
+    (let [end-of-string (clojure.string/index-of source \" 1)]
+      (if-not end-of-string
+        {:lexeme source :type :error-unterminated-string}
+        {:lexeme (subs source 0 (inc end-of-string)), :type :string,
+         :literal (subs source 1 end-of-string)}))))
+
 (defn parse-token
   "Parse the next token from the source"
   [source]
@@ -52,6 +62,7 @@
       (parse-two-char-lexeme (vec (subs source 0 2)))
       (parse-slash source)
       (parse-newline source)
+      (parse-string source)
       {:lexeme source, :type :404}))
 
 (defn parse-tokens
