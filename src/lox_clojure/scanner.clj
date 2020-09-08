@@ -17,7 +17,7 @@
   (some->> (get single-char-lexemes character-to-match)
            (assoc {:lexeme (str character-to-match)} :type)))
 
-(defn parse-slash
+(defn parse-slash-lexeme
   "Parse comments or slash"
   [source]
   (let [first-char (get source 0)
@@ -40,12 +40,12 @@
     \> (if (= second-char \=) {:lexeme ">=", :type :greater_equal} {:lexeme "!", :type :greater})
     nil))
 
-(defn parse-newline
+(defn parse-newline-lexeme
   "Parse newlines"
   [source]
   (if (= \newline (get source 0)) {:lexeme "\n", :type :newline}))
 
-(defn parse-string
+(defn parse-string-lexeme
   "Parse strings"
   [source]
   (if (= \" (get source 0))
@@ -60,9 +60,9 @@
   [source]
   (or (parse-single-char-lexeme (get source 0))
       (parse-two-char-lexeme (vec (subs source 0 2)))
-      (parse-slash source)
-      (parse-newline source)
-      (parse-string source)
+      (parse-slash-lexeme source)
+      (parse-newline-lexeme source)
+      (parse-string-lexeme source)
       {:lexeme source, :type :404}))
 
 (defn parse-tokens
