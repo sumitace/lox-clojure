@@ -18,13 +18,13 @@
   (let [{:keys [tokens last-line-num]} (parse-tokens [] source 0)]
     (conj tokens {:lexeme nil, :type :eof, :literal nil, :location last-line-num})))
 
-(defn parse-single-char-lexeme
+(defn- parse-single-char-lexeme
   "If this character is a lexeme by itself, turn it into a token"
   [character-to-match]
   (some->> (get single-char-lexemes character-to-match)
            (assoc {:lexeme (str character-to-match)} :type)))
 
-(defn parse-slash-lexeme
+(defn- parse-slash-lexeme
   "Parse comments or slash"
   [source]
   (let [first-char (get source 0)
@@ -37,7 +37,7 @@
               (let [end-of-comment (or (clojure.string/index-of source "\n" 2) (count source))]
                 {:lexeme (subs source 0 end-of-comment), :type :comment})))))
 
-(defn parse-two-char-lexeme
+(defn- parse-two-char-lexeme
   "If this char is up to a two-char lexeme, turn it into a token"
   [[first-char second-char]]
   (case first-char
@@ -47,12 +47,12 @@
     \> (if (= second-char \=) {:lexeme ">=", :type :greater_equal} {:lexeme "!", :type :greater})
     nil))
 
-(defn parse-newline-lexeme
+(defn- parse-newline-lexeme
   "Parse newlines"
   [source]
   (if (= \newline (get source 0)) {:lexeme "\n", :type :newline}))
 
-(defn parse-string-lexeme
+(defn- parse-string-lexeme
   "Parse strings"
   [source]
   (if (= \" (get source 0))
@@ -62,17 +62,17 @@
         {:lexeme (subs source 0 (inc end-of-string)), :type :string,
          :literal (subs source 1 end-of-string)}))))
 
-(defn parse-double
+(defn- parse-double
   "Parse as double - return nil if not"
   [s]
   (try (Double/parseDouble s) (catch Exception e)))
 
-(defn is-int?
+(defn- is-int?
   "True if char is int"
   [c]
   (let [c (int c)] (and (>= c (int \0)) (<= c (int \9)))))
 
-(defn parse-number-lexeme
+(defn- parse-number-lexeme
   "Parse numbers"
   [source]
   (if (is-int? (get source 0))
@@ -82,19 +82,19 @@
                   (vec source))]
       {:lexeme lexeme, :type :number, :literal (parse-double lexeme)})))
 
-(defn is-alpha?
+(defn- is-alpha?
   "Returns true if the char is alphabetic"
   [c]
   (let [c (int c)] (or (and (>= c (int \a)) (<= c (int \z)))
                        (and (>= c (int \A)) (<= c (int \Z)))
                        (= c (int \_)))))
 
-(defn is-alphanumeric?
+(defn- is-alphanumeric?
   "Returns true if the char is alphanumeric"
   [c]
   (or (is-int? c) (is-alpha? c)))
 
-(defn parse-identifier-lexemes
+(defn- parse-identifier-lexemes
   ""
   [source]
   (if (is-alpha? (get source 0))
@@ -104,7 +104,7 @@
                   (vec source))]
       {:lexeme lexeme, :type :identifier})))
 
-(defn parse-identifier-keyword-lexemes
+(defn- parse-identifier-keyword-lexemes
   ""
   [source]
   (if-some [token (parse-identifier-lexemes source)]
@@ -112,7 +112,7 @@
       (assoc token :type type)
       token)))
 
-(defn parse-token
+(defn- parse-token
   "Parse the next token from the source"
   [source]
   (or (parse-single-char-lexeme (get source 0))
@@ -124,7 +124,7 @@
       (parse-identifier-keyword-lexemes source)
       {:lexeme source, :type :404}))
 
-(defn parse-tokens
+(defn- parse-tokens
   "Recursively parse the remaining source into tokens"
   [parsed-tokens source source-line-num]
   (if (clojure.string/blank? source) {:tokens parsed-tokens, :last-line-num source-line-num}
