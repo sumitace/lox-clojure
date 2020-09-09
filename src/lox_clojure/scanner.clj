@@ -15,7 +15,8 @@
 (defn scan-tokens
   "Scans a line of source into tokens"
   [source]
-  {:type :eof, :lexeme "", :literal nil, :location -1})
+  (let [{:keys [tokens last-line-num]} (parse-tokens [] source 0)]
+    (conj tokens {:lexeme nil, :type :eof, :literal nil, :location last-line-num})))
 
 (defn parse-single-char-lexeme
   "If this character is a lexeme by itself, turn it into a token"
@@ -126,7 +127,7 @@
 (defn parse-tokens
   "Recursively parse the remaining source into tokens"
   [parsed-tokens source source-line-num]
-  (if (clojure.string/blank? source) parsed-tokens
+  (if (clojure.string/blank? source) {:tokens parsed-tokens, :last-line-num source-line-num}
       (let [this-token (parse-token source)
             this-token (assoc this-token :source-line-num source-line-num)
             had-newline? (= :newline (:type this-token))
