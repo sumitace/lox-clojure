@@ -55,6 +55,26 @@
         {:lexeme (subs source 0 (inc end-of-string)), :type :string,
          :literal (subs source 1 end-of-string)}))))
 
+(defn parse-double
+  "Parse as double - return nil if not"
+  [s]
+  (try (Double/parseDouble s) (catch Exception e)))
+
+(defn is-int?
+  "True if char is int"
+  [c]
+  (let [c (int c)] (and (>= c (int \0)) (<= c (int \9)))))
+
+(defn parse-number-lexeme
+  "Parse numbers"
+  [source]
+  (if (is-int? (get source 0))
+    (let [lexeme (reduce
+                  ;; reduce until the reduced string no longer parses as a double
+                  (fn [s i] (let [si (str s i)] (if (parse-double si) si (reduced s))))
+                  (vec source))]
+      {:lexeme lexeme, :type :number, :literal (parse-double lexeme)})))
+
 (defn parse-token
   "Parse the next token from the source"
   [source]
@@ -63,6 +83,7 @@
       (parse-slash-lexeme source)
       (parse-newline-lexeme source)
       (parse-string-lexeme source)
+      (parse-number-lexeme source)
       {:lexeme source, :type :404}))
 
 (defn parse-tokens
