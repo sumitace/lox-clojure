@@ -6,6 +6,12 @@
    \; :semicolon, \* :star, \space :space, \return :return
    \tab :tab, \formfeed :formfeed})
 
+(def keyword-lexemes
+  {"and" :and, "class" :class, "else" :else, "false" :false
+   "for" :for, "fun", :function, "if" :if, "nil" :nil
+   "or" :or, "print" :print, "return" :return, "super" :super
+   "this" :this, "true" :true, "var" :var, "while" :while})
+
 (defn scan-tokens
   "Scans a line of source into tokens"
   [source]
@@ -75,6 +81,36 @@
                   (vec source))]
       {:lexeme lexeme, :type :number, :literal (parse-double lexeme)})))
 
+(defn is-alpha?
+  "Returns true if the char is alphabetic"
+  [c]
+  (let [c (int c)] (or (and (>= c (int \a)) (<= c (int \z)))
+                       (and (>= c (int \A)) (<= c (int \Z)))
+                       (= c (int \_)))))
+
+(defn is-alphanumeric?
+  "Returns true if the char is alphanumeric"
+  [c]
+  (or (is-int? c) (is-alpha? c)))
+
+(defn parse-identifier-lexemes
+  ""
+  [source]
+  (if (is-alpha? (get source 0))
+    (let [lexeme (reduce
+                  ;; reduce until the reduced string is not alphanumeric
+                  (fn [s i] (let [si (str s i)] (if (is-alphanumeric? i) si (reduced s))))
+                  (vec source))]
+      {:lexeme lexeme, :type :identifier})))
+
+(defn parse-identifier-keyword-lexemes
+  ""
+  [source]
+  (if-some [token (parse-identifier-lexemes source)]
+    (if-some [type (get keyword-lexemes (:lexeme token))]
+      (assoc token :type type)
+      token)))
+
 (defn parse-token
   "Parse the next token from the source"
   [source]
@@ -84,6 +120,7 @@
       (parse-newline-lexeme source)
       (parse-string-lexeme source)
       (parse-number-lexeme source)
+      (parse-identifier-keyword-lexemes source)
       {:lexeme source, :type :404}))
 
 (defn parse-tokens
