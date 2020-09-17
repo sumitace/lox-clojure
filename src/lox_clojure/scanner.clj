@@ -79,7 +79,11 @@
     (let [lexeme (reduce
                   ;; reduce until the reduced string no longer parses as a double
                   (fn [s i] (let [si (str s i)] (if (parse-double si) si (reduced s))))
-                  (vec source))]
+                  (vec source))
+          ;; drop non-int chars from the end, cuz java can parse things like "23." and "23.4\n\n"
+          ;; as doubles
+          lexeme (apply str (reverse (drop-while (partial (complement is-int?))
+                                                 (reverse (vec lexeme)))))]
       {:lexeme lexeme, :type :number, :literal (parse-double lexeme)})))
 
 (defn- is-alpha?
