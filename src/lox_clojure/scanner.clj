@@ -1,5 +1,11 @@
 (ns lox-clojure.scanner)
 
+(defrecord Token [type lexeme literal location])
+
+(defn- make-token
+  ([type lexeme] (->Token type lexeme nil nil))
+  ([type lexeme literal] (->Token type lexeme literal nil)))
+
 (def single-char-lexemes
   {\( :left_paren, \) :right_paren, \{ :left_brace, \} :right_brace
    \, :comma, \. :dot, \- :minus, \+ :plus
@@ -12,17 +18,11 @@
    "or" :or, "print" :print, "return" :return, "super" :super
    "this" :this, "true" :true, "var" :var, "while" :while})
 
-(defn scan-tokens
-  "Scans a line of source into tokens"
-  [source]
-  (let [{:keys [tokens last-line-num]} (parse-tokens [] source 0)]
-    (conj tokens {:lexeme nil, :type :eof, :literal nil, :location last-line-num})))
-
 (defn- parse-single-char-lexeme
   "If this character is a lexeme by itself, turn it into a token"
   [character-to-match]
-  (some->> (get single-char-lexemes character-to-match)
-           (assoc {:lexeme (str character-to-match)} :type)))
+  (some-> (get single-char-lexemes character-to-match)
+          (make-token (str character-to-match))))
 
 (defn- parse-slash-lexeme
   "Parse comments or slash"
@@ -32,25 +32,25 @@
         second-char (if (> (count source ) 1) (get source 1))]
     (if (= \/ first-char)
       ;; if the first char is a / and the second char is not, this is not a comment
-      (if-not (= \/ second-char) {:lexeme "/", :type :slash}
+      (if-not (= \/ second-char) (make-token :slash "/")
               ;; if the first and second chars were /, then this is a comment
               (let [end-of-comment (or (clojure.string/index-of source "\n" 2) (count source))]
-                {:lexeme (subs source 0 end-of-comment), :type :comment})))))
+                (make-token :comment (subs source 0 end-of-comment)))))))
 
 (defn- parse-two-char-lexeme
   "If this char is up to a two-char lexeme, turn it into a token"
   [[first-char second-char]]
   (case first-char
-    \! (if (= second-char \=) {:lexeme "!=", :type :bang_equal} {:lexeme "!", :type :bang})
-    \= (if (= second-char \=) {:lexeme "==", :type :equal_equal} {:lexeme "!", :type :equal})
-    \< (if (= second-char \=) {:lexeme "<=", :type :less_equal} {:lexeme "!", :type :less})
-    \> (if (= second-char \=) {:lexeme ">=", :type :greater_equal} {:lexeme "!", :type :greater})
+    \! (if (= second-char \=) (make-token :bang_equal "!=") (make-token :bang "!"))
+    \= (if (= second-char \=) (make-token :equal_equal "==") (make-token :equal "="))
+    \< (if (= second-char \=) (make-token :less_equal "<=") (make-token :less "<"))
+    \> (if (= second-char \=) (make-token :greater_equal ">=") (make-token :greater ">"))
     nil))
 
 (defn- parse-newline-lexeme
   "Parse newlines"
   [source]
-  (if (= \newline (get source 0)) {:lexeme "\n", :type :newline}))
+  (if (= \newline (get source 0)) (make-token :newline "\n")))
 
 (defn- parse-string-lexeme
   "Parse strings"
@@ -58,9 +58,8 @@
   (if (= \" (get source 0))
     (let [end-of-string (clojure.string/index-of source \" 1)]
       (if-not end-of-string
-        {:lexeme source :type :error-unterminated-string}
-        {:lexeme (subs source 0 (inc end-of-string)), :type :string,
-         :literal (subs source 1 end-of-string)}))))
+        (make-token :error-unterminated-string source)
+        (make-token :string (subs source 0 (inc end-of-string)) (subs source 1 end-of-string))))))
 
 (defn- parse-double
   "Parse as double - return nil if not"
@@ -84,7 +83,7 @@
           ;; as doubles
           lexeme (apply str (reverse (drop-while (partial (complement is-int?))
                                                  (reverse (vec lexeme)))))]
-      {:lexeme lexeme, :type :number, :literal (parse-double lexeme)})))
+      (make-token :number lexeme (parse-double lexeme)))))
 
 (defn- is-alpha?
   "Returns true if the char is alphabetic"
@@ -106,7 +105,7 @@
                   ;; reduce until the reduced string is not alphanumeric
                   (fn [s i] (let [si (str s i)] (if (is-alphanumeric? i) si (reduced s))))
                   (vec source))]
-      {:lexeme lexeme, :type :identifier})))
+      (make-token :identifier lexeme))))
 
 (defn- parse-identifier-keyword-lexemes
   ""
@@ -126,7 +125,7 @@
       (parse-string-lexeme source)
       (parse-number-lexeme source)
       (parse-identifier-keyword-lexemes source)
-      {:lexeme source, :type :404}))
+      (make-token :404 source)))
 
 (defn- parse-tokens
   "Recursively parse the remaining source into tokens"
@@ -140,4 +139,10 @@
             this-token-len (count (:lexeme this-token))
             remaining-source (if (> (count source) this-token-len) (subs source this-token-len))]
         (recur parsed-tokens remaining-source next-source-line-num))))
+
+(defn scan-tokens
+  "Scans a line of source into tokens"
+  [source]
+  (let [{:keys [tokens last-line-num]} (parse-tokens [] source 0)]
+    (conj tokens (->Token :eof nil nil last-line-num))))
 
