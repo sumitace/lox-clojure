@@ -18,6 +18,9 @@
    "or" :or, "print" :print, "return" :return, "super" :super
    "this" :this, "true" :true, "var" :var, "while" :while})
 
+(def ignored-token-types
+  #{:space :return :tab :formfeed :newline :comment})
+
 (defn- parse-single-char-lexeme
   "If this character is a lexeme by itself, turn it into a token"
   [character-to-match]
@@ -140,9 +143,15 @@
             remaining-source (if (> (count source) this-token-len) (subs source this-token-len))]
         (recur parsed-tokens remaining-source next-source-line-num))))
 
+(defn- remove-useless-tokens
+  "Remove whitespace, comments"
+  [tokens]
+  (remove #(contains? ignored-token-types (:type %)) tokens))
+
 (defn scan-tokens
   "Scans a line of source into tokens"
   [source]
-  (let [{:keys [tokens last-line-num]} (parse-tokens [] source 0)]
+  (let [{:keys [tokens last-line-num]} (parse-tokens [] source 0)
+        tokens (remove-useless-tokens tokens)]
     (conj tokens (->Token :eof nil nil last-line-num))))
 
