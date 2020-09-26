@@ -119,7 +119,7 @@
   "Parse the next token from the source"
   [source]
   (or (parse-single-char-lexeme (get source 0))
-      (parse-two-char-lexeme (vec (subs source 0 2)))
+      (if (>= (count source) 2) (parse-two-char-lexeme (vec (subs source 0 2))))
       (parse-slash-lexeme source)
       (parse-newline-lexeme source)
       (parse-string-lexeme source)
