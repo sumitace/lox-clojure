@@ -75,10 +75,10 @@
   "Parse numbers"
   [source]
   (if (is-int? (get source 0))
-    (let [lexeme (reduce
-                  ;; reduce until the reduced string no longer parses as a double
-                  (fn [s i] (let [si (str s i)] (if (parse-double si) si (reduced s))))
-                  (vec source))
+    (let [lexeme (str (reduce
+                       ;; reduce until the reduced string no longer parses as a double
+                       (fn [s i] (let [si (str s i)] (if (parse-double si) (str si) (reduced s))))
+                       source))
           ;; drop non-int chars from the end, cuz java can parse things like "23." and "23.4\n\n"
           ;; as doubles
           lexeme (apply str (reverse (drop-while (partial (complement is-int?))
@@ -101,10 +101,10 @@
   ""
   [source]
   (if (is-alpha? (get source 0))
-    (let [lexeme (reduce
-                  ;; reduce until the reduced string is not alphanumeric
-                  (fn [s i] (let [si (str s i)] (if (is-alphanumeric? i) si (reduced s))))
-                  (vec source))]
+    (let [lexeme (str (reduce
+                   ;; reduce until the reduced string is not alphanumeric
+                   (fn [s i] (let [si (str s i)] (if (is-alphanumeric? i) si (reduced s))))
+                   source))]
       (make-token :identifier lexeme))))
 
 (defn- parse-identifier-keyword-lexemes
