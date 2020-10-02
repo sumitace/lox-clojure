@@ -146,7 +146,7 @@
 (defn- remove-useless-tokens
   "Remove whitespace, comments"
   [tokens]
-  (remove #(contains? ignored-token-types (:type %)) tokens))
+  (vec (remove #(contains? ignored-token-types (:type %)) tokens)))
 
 (defn scan-tokens
   "Scans a line of source into tokens"
