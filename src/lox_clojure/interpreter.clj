@@ -1,5 +1,6 @@
 (ns lox-clojure.interpreter
-  (:require [lox-clojure.expr :as expr :refer :all])
+  (:require [lox-clojure.expr :as expr :refer :all]
+            [lox-clojure.error :as tc])
   (:import (lox_clojure.expr Binary Grouping Literal Unary)))
 
 (defprotocol Interpretable
@@ -21,7 +22,7 @@
     (let [right (interpret right)]
       (case (:type operator)
        :bang (boolean right)
-       :minus (- right))))
+       :minus (if (tc/check-number-operator) (- right)))))
 
   Binary
   (interpret [{:keys [operator left right]}]
