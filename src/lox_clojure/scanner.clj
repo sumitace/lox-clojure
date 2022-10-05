@@ -64,7 +64,7 @@
         (make-token :error-unterminated-string source)
         (make-token :string (subs source 0 (inc end-of-string)) (subs source 1 end-of-string))))))
 
-(defn- parse-double
+(defn- this-parse-double
   "Parse as double - return nil if not"
   [s]
   (try (Double/parseDouble s) (catch Exception e)))
@@ -80,13 +80,13 @@
   (if (is-int? (get source 0))
     (let [lexeme (str (reduce
                        ;; reduce until the reduced string no longer parses as a double
-                       (fn [s i] (let [si (str s i)] (if (parse-double si) (str si) (reduced s))))
+                       (fn [s i] (let [si (str s i)] (if (this-parse-double si) (str si) (reduced s))))
                        source))
           ;; drop non-int chars from the end, cuz java can parse things like "23." and "23.4\n\n"
           ;; as doubles
           lexeme (apply str (reverse (drop-while (partial (complement is-int?))
                                                  (reverse (vec lexeme)))))]
-      (make-token :number lexeme (parse-double lexeme)))))
+      (make-token :number lexeme (this-parse-double lexeme)))))
 
 (defn- is-alpha?
   "Returns true if the char is alphabetic"
